@@ -168,6 +168,9 @@ struct DrainState<'cfg> {
     /// How many jobs we've finished
     finished: usize,
     per_package_future_incompat_reports: Vec<FutureIncompatReportPackage>,
+
+    /// How many jobs were marked "fresh"
+    fresh_count: usize,
 }
 
 pub struct ErrorsDuringDrain {
@@ -530,6 +533,7 @@ impl<'cfg> JobQueue<'cfg> {
             print: DiagnosticPrinter::new(cx.bcx.config),
             finished: 0,
             per_package_future_incompat_reports: Vec::new(),
+            fresh_count: 0,
         };
 
         // Create a helper thread for acquiring jobserver tokens
@@ -838,6 +842,13 @@ impl<'cfg> DrainState<'cfg> {
         // and then immediately return (or keep going, if requested by the build
         // config).
         let mut errors = ErrorsDuringDrain { count: 0 };
+
+        let message = format!(
+            "Total units: {}, finished: {}",
+            self.total_units, self.finished
+        );
+        drop(cx.bcx.config.shell().status("Info", message));
+
         // CAUTION! Do not use `?` or break out of the loop early. Every error
         // must be handled in such a way that the loop is still allowed to
         // drain event messages.
@@ -913,9 +924,12 @@ impl<'cfg> DrainState<'cfg> {
                 "{} [{}] target(s) in {}",
                 profile_name, opt_type, time_elapsed
             );
+            cx.compilation.was_fresh = self.fresh_count == self.total_units;
             if !cx.bcx.build_config.build_plan {
-                // It doesn't really matter if this fails.
-                drop(cx.bcx.config.shell().status("Finished", message));
+                if !(cx.bcx.config.no_finished_line && cx.compilation.was_fresh) {
+                    // It doesn't really matter if this fails.
+                    drop(cx.bcx.config.shell().status("Finished", message));
+                }
                 future_incompat::save_and_display_report(
                     cx.bcx,
                     &self.per_package_future_incompat_reports,
@@ -1017,6 +1031,9 @@ impl<'cfg> DrainState<'cfg> {
 
         let messages = self.messages.clone();
         let fresh = job.freshness();
+        if fresh == Fresh {
+            self.fresh_count += 1;
+        }
         let rmeta_required = cx.rmeta_required(unit);
 
         let doit = move |state: JobState<'_, '_>| {

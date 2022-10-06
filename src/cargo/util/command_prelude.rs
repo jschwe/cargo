@@ -78,6 +78,13 @@ pub trait CommandExt: Sized {
         ))
     }
 
+    fn arg_no_finished_line(self) -> Self {
+        self._arg(flag(
+            "no-finished-line",
+            "Suppress the `Finished` / `Running` line if no rebuild was necessary (unstable)",
+        ))
+    }
+
     fn arg_targets_all(
         self,
         lib: &'static str,

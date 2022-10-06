@@ -31,6 +31,7 @@ mod cfg;
 mod check;
 mod check_cfg;
 mod clean;
+mod cli_no_finished_line;
 mod collisions;
 mod concurrent;
 mod config;

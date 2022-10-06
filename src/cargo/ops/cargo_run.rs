@@ -95,7 +95,9 @@ pub fn run(
     let mut process = compile.target_process(exe, unit.kind, pkg, *script_meta)?;
     process.args(args).cwd(config.cwd());
 
-    config.shell().status("Running", process.to_string())?;
+    if !(config.no_finished_line && compile.was_fresh) {
+        config.shell().status("Running", process.to_string())?;
+    }
 
     process.exec_replace()
 }

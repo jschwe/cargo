@@ -52,10 +52,18 @@ pub fn cli() -> Command {
         .arg_ignore_rust_version()
         .arg_future_incompat_report()
         .arg_timings()
+        .arg_no_finished_line()
         .after_help("Run `cargo help rustc` for more detailed information.\n")
 }
 
 pub fn exec(config: &mut Config, args: &ArgMatches) -> CliResult {
+    if args.get_flag("no-finished-line") {
+        // todo: tracking issue number
+        config
+            .cli_unstable()
+            .fail_if_stable_opt("--no-finished-line", 0)?;
+        config.no_finished_line = true;
+    }
     let ws = args.workspace(config)?;
     // This is a legacy behavior that changes the behavior based on the profile.
     // If we want to support this more formally, I think adding a --mode flag

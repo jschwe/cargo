@@ -102,6 +102,9 @@ pub struct Compilation<'cfg> {
     primary_rustc_process: Option<ProcessBuilder>,
 
     target_runners: HashMap<CompileKind, Option<(PathBuf, Vec<String>)>>,
+
+    /// Whether any actual work was done or everything was fresh.
+    pub was_fresh: bool,
 }
 
 impl<'cfg> Compilation<'cfg> {
@@ -157,6 +160,7 @@ impl<'cfg> Compilation<'cfg> {
                 .chain(Some(&CompileKind::Host))
                 .map(|kind| Ok((*kind, target_runner(bcx, *kind)?)))
                 .collect::<CargoResult<HashMap<_, _>>>()?,
+            was_fresh: false,
         })
     }
 
